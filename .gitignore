@@ -1,0 +1,14 @@
+# Dono folders ke node_modules ignore honge
+node_modules/
+**/node_modules/
+
+# Sabhi .env files ignore hongi
+.env
+**/.env
+
+# Frontend ka build folder
+dist/
+build/
+
+# Logs
+*.log
