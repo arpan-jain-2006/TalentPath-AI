@@ -20,11 +20,14 @@ const Home = () => {
   };
 
   const handleGenerateReport = async () => {
-    const resumeFile = resumeInputRef.current?.files?.[0];
+    // 👉 selectedFile state use ki hai yahan
+    const resumeFile = selectedFile || resumeInputRef.current?.files?.[0];
+
     if (!jobDescription.trim()) {
       alert("Please provide a Job Description!");
       return;
     }
+
     if (!resumeFile && !selfDescription.trim()) {
       alert("Please upload a resume or provide a quick self-description!");
       return;
@@ -141,7 +144,6 @@ const Home = () => {
                   name="resume"
                   accept=".pdf,.docx"
                   onChange={handleFileChange}
-                  required
                 />
               </label>
             </div>
