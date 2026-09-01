@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "https://talentpath-ai-1.onrender.com",
+    baseURL: "https://talentpath-ai.onrender.com",
     withCredentials: true,
 })
 
