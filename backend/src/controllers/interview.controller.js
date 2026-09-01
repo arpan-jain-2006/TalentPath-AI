@@ -9,42 +9,64 @@ async function generateInterViewReportController(req, res) {
     try {
         let resumeText = "";
 
-        // 1. Agar resume PDF file aayi hai toh parse karein
-        if (req.file) {
-            const parsedPdf = await pdfParse(req.file.buffer);
-            resumeText = parsedPdf.text;
+        // 1. Resume PDF parsing with safe fallback
+        if (req.file && req.file.buffer) {
+            try {
+                const parsedPdf = await pdfParse(req.file.buffer);
+                resumeText = parsedPdf.text || "";
+            } catch (pdfErr) {
+                console.error("PDF Parsing Error:", pdfErr);
+            }
         }
 
         const { selfDescription, jobDescription, title } = req.body;
 
-        // Validation: Resume ya Self-Description me se koi ek hona zaroori hai
-        if (!resumeText && !selfDescription) {
+        // Validation
+        if (!resumeText.trim() && (!selfDescription || !selfDescription.trim())) {
             return res.status(400).json({
-                message: "Either a Resume or a Self Description is required."
+                message: "Either a valid Resume or a Self Description is required."
             });
         }
 
-        if (!jobDescription) {
+        if (!jobDescription || !jobDescription.trim()) {
             return res.status(400).json({
                 message: "Target Job Description is required."
             });
         }
 
-        // 2. AI Report generate karein
+        // 2. User ID resolution (handles both id and _id)
+        const userId = req.user?.id || req.user?._id;
+        if (!userId) {
+            return res.status(401).json({
+                message: "Unauthorized: User identification missing."
+            });
+        }
+
+        // 3. AI Report Generation
         const interViewReportByAi = await generateInterviewReport({
             resume: resumeText,
-            selfDescription,
-            jobDescription
+            selfDescription: selfDescription || "",
+            jobDescription: jobDescription.trim()
         });
 
-        // 3. Database me save karein
+        if (!interViewReportByAi) {
+            return res.status(500).json({
+                message: "Failed to generate report from AI model."
+            });
+        }
+
+        // 4. Database Insertion
         const interviewReport = await interviewReportModel.create({
-            user: req.user.id,
+            user: userId,
             title: title || interViewReportByAi.title || "Interview Plan",
             resume: resumeText,
-            selfDescription,
-            jobDescription,
-            ...interViewReportByAi
+            selfDescription: selfDescription || "",
+            jobDescription: jobDescription.trim(),
+            matchScore: interViewReportByAi.matchScore,
+            technicalQuestions: interViewReportByAi.technicalQuestions,
+            behavioralQuestions: interViewReportByAi.behavioralQuestions,
+            skillGaps: interViewReportByAi.skillGaps,
+            preparationPlan: interViewReportByAi.preparationPlan
         });
 
         return res.status(201).json({
@@ -52,7 +74,7 @@ async function generateInterViewReportController(req, res) {
             interviewReport
         });
     } catch (error) {
-        console.error("Error in generateInterViewReportController:", error);
+        console.error("Critical Error in generateInterViewReportController:", error);
         return res.status(500).json({
             message: "Error generating interview report",
             error: error.message || error
@@ -66,10 +88,11 @@ async function generateInterViewReportController(req, res) {
 async function getInterviewReportByIdController(req, res) {
     try {
         const { interviewId } = req.params;
+        const userId = req.user?.id || req.user?._id;
 
         const interviewReport = await interviewReportModel.findOne({ 
             _id: interviewId, 
-            user: req.user.id 
+            user: userId 
         });
 
         if (!interviewReport) {
@@ -96,8 +119,10 @@ async function getInterviewReportByIdController(req, res) {
  */
 async function getAllInterviewReportsController(req, res) {
     try {
+        const userId = req.user?.id || req.user?._id;
+
         const interviewReports = await interviewReportModel
-            .find({ user: req.user.id })
+            .find({ user: userId })
             .sort({ createdAt: -1 })
             .select("-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan");
 
