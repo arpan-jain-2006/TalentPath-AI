@@ -4,6 +4,9 @@ const cors = require("cors")
 
 const app = express()
 
+// 👉 Render proxy ke through secure cookies allow karne ke liye:
+app.set("trust proxy", 1)
+
 app.use(express.json())
 app.use(cookieParser())
 
