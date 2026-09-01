@@ -6,8 +6,10 @@ const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
+
+// Updated CORS origin
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: "https://talent-path-ai.vercel.app",
     credentials: true
 }))
 
@@ -15,11 +17,8 @@ app.use(cors({
 const authRouter = require("./routes/auth.routes")
 const interviewRouter = require("./routes/interview.routes")
 
-
 /* using all the routes here */
 app.use("/api/auth", authRouter)
 app.use("/api/interview", interviewRouter)
-
-
 
 module.exports = app
