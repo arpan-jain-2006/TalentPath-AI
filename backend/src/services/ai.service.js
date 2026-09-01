@@ -96,7 +96,7 @@ Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -107,49 +107,27 @@ Job Description: ${jobDescription}`
     return JSON.parse(response.text.trim())
 }
 
-// 👉 Updated Puppeteer Function for Render / Linux Production
 async function generatePdfFromHtml(htmlContent) {
-    let browser = null;
-    try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--no-first-run",
-                "--no-zygote",
-                "--single-process",
-                "--disable-extensions"
-            ]
-        });
+    const browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    })
+    const page = await browser.newPage()
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
 
-        const page = await browser.newPage();
-        
-        // Timeout handling added
-        await page.setContent(htmlContent, { 
-            waitUntil: "domcontentloaded",
-            timeout: 30000 
-        });
-
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: {
-                top: "15mm",
-                bottom: "15mm",
-                left: "15mm",
-                right: "15mm"
-            }
-        });
-
-        return pdfBuffer;
-    } finally {
-        if (browser) {
-            await browser.close();
+    const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+            top: "15mm",
+            bottom: "15mm",
+            left: "15mm",
+            right: "15mm"
         }
-    }
+    })
+
+    await browser.close()
+    return pdfBuffer
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
@@ -159,7 +137,7 @@ Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
