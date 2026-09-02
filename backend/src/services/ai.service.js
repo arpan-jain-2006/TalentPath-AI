@@ -95,9 +95,8 @@ Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    // 👉 Switched to high-quota stable model
     const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -109,48 +108,36 @@ Job Description: ${jobDescription}`
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    // 👉 Render container compatibility flags
     const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--no-zygote",
-            "--single-process"
-        ]
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
     })
-    
-    try {
-        const page = await browser.newPage()
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+    const page = await browser.newPage()
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
 
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: {
-                top: "15mm",
-                bottom: "15mm",
-                left: "15mm",
-                right: "15mm"
-            }
-        })
-        return pdfBuffer
-    } finally {
-        await browser.close()
-    }
+    const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+            top: "15mm",
+            bottom: "15mm",
+            left: "15mm",
+            right: "15mm"
+        }
+    })
+
+    await browser.close()
+    return pdfBuffer
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-    const prompt = `Generate an ATS-friendly, clean and well-formatted resume in single-page HTML format for this profile:
+    const prompt = `Generate an ATS-friendly, well-formatted resume in single-page HTML format for this profile:
 Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    // 👉 Switched to high-quota stable model
     const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
