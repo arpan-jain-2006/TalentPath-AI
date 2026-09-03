@@ -89,33 +89,41 @@ const resumePdfSchema = {
     required: ["html"]
 }
 
+// 503 High Demand spikes handle karne ke liye auto-retry helper
+async function callGeminiWithRetry(fn, retries = 3, delay = 2000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn()
+        } catch (error) {
+            if (error?.status === 503 && i < retries - 1) {
+                console.warn(`Gemini 503 busy spike. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`)
+                await new Promise(res => setTimeout(res, delay))
+                delay *= 2
+                continue
+            }
+            throw error
+        }
+    }
+}
+
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
     const prompt = `Generate an interview report for a candidate with the following details:
 Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    const config = {
-        responseMimeType: "application/json",
-        responseSchema: interviewReportSchema,
-    }
+    const response = await callGeminiWithRetry(() => 
+        ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: interviewReportSchema,
+            }
+        })
+    )
 
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config,
-        })
-        return JSON.parse(response.text.trim())
-    } catch (error) {
-        console.warn("Primary model 503/error, falling back to gemini-1.5-flash:", error?.message)
-        const fallbackResponse = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: prompt,
-            config,
-        })
-        return JSON.parse(fallbackResponse.text.trim())
-    }
+    return JSON.parse(response.text.trim())
 }
 
 async function generatePdfFromHtml(htmlContent) {
@@ -157,29 +165,18 @@ Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    const config = {
-        responseMimeType: "application/json",
-        responseSchema: resumePdfSchema,
-    }
-
-    let jsonContent
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+    const response = await callGeminiWithRetry(() =>
+        ai.models.generateContent({
+            model: "gemini-3.6-flash",
             contents: prompt,
-            config,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: resumePdfSchema,
+            }
         })
-        jsonContent = JSON.parse(response.text.trim())
-    } catch (error) {
-        console.warn("Primary model 503/error for PDF, falling back to gemini-1.5-flash:", error?.message)
-        const fallbackResponse = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: prompt,
-            config,
-        })
-        jsonContent = JSON.parse(fallbackResponse.text.trim())
-    }
+    )
 
+    const jsonContent = JSON.parse(response.text.trim())
     return await generatePdfFromHtml(jsonContent.html)
 }
 
