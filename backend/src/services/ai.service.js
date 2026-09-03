@@ -95,57 +95,91 @@ Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: interviewReportSchema,
-        }
-    })
+    const config = {
+        responseMimeType: "application/json",
+        responseSchema: interviewReportSchema,
+    }
 
-    return JSON.parse(response.text.trim())
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config,
+        })
+        return JSON.parse(response.text.trim())
+    } catch (error) {
+        console.warn("Primary model 503/error, falling back to gemini-1.5-flash:", error?.message)
+        const fallbackResponse = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: prompt,
+            config,
+        })
+        return JSON.parse(fallbackResponse.text.trim())
+    }
 }
 
 async function generatePdfFromHtml(htmlContent) {
     const browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    })
-    const page = await browser.newPage()
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
-
-    const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-            top: "15mm",
-            bottom: "15mm",
-            left: "15mm",
-            right: "15mm"
-        }
+        headless: true,
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--no-zygote",
+            "--single-process"
+        ]
     })
 
-    await browser.close()
-    return pdfBuffer
+    try {
+        const page = await browser.newPage()
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: {
+                top: "15mm",
+                bottom: "15mm",
+                left: "15mm",
+                right: "15mm"
+            }
+        })
+        return pdfBuffer
+    } finally {
+        await browser.close()
+    }
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-    const prompt = `Generate an ATS-friendly, well-formatted resume in single-page HTML format for this profile:
+    const prompt = `Generate an ATS-friendly, clean single-page HTML resume for this profile:
 Resume: ${resume || "Not provided"}
 Self Description: ${selfDescription || "Not provided"}
 Job Description: ${jobDescription}`
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: resumePdfSchema,
-        }
-    })
+    const config = {
+        responseMimeType: "application/json",
+        responseSchema: resumePdfSchema,
+    }
 
-    const jsonContent = JSON.parse(response.text.trim())
+    let jsonContent
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config,
+        })
+        jsonContent = JSON.parse(response.text.trim())
+    } catch (error) {
+        console.warn("Primary model 503/error for PDF, falling back to gemini-1.5-flash:", error?.message)
+        const fallbackResponse = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: prompt,
+            config,
+        })
+        jsonContent = JSON.parse(fallbackResponse.text.trim())
+    }
+
     return await generatePdfFromHtml(jsonContent.html)
 }
 
