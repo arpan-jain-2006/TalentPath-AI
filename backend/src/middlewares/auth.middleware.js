@@ -3,13 +3,13 @@ const tokenBlacklistModel = require("../models/blacklist.model")
 
 async function authUser(req, res, next) {
     try {
-        // 👉 1. Cookie ya Header dono se token fetch karo
-        const token = req.cookies?.token || req.headers.authorization?.split(" ")[1]
+        // 👉 1. Cookie, Header, ya Query parameter se token fetch karo
+        const token = req.cookies?.token || req.headers.authorization?.split(" ")[1] || req.query?.token;
 
         if (!token) {
             return res.status(401).json({
                 message: "Token not provided."
-            })
+            });
         }
 
         // 2. Blacklist check

@@ -53,6 +53,32 @@ export const getAllInterviewReports = async () => {
 };
 
 /**
+ * @description Service to delete an interview report.
+ */
+export const deleteInterviewReport = async (interviewId) => {
+    try {
+        const response = await api.delete(`/api/interview/${interviewId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting report:", error);
+        throw error;
+    }
+};
+
+/**
+ * @description Service to get structured ATS resume data and HTML preview.
+ */
+export const getResumePreview = async (interviewReportId) => {
+    try {
+        const response = await api.get(`/api/interview/resume/preview/${interviewReportId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching resume preview:", error);
+        throw error;
+    }
+};
+
+/**
  * @description Service to generate resume pdf based on user self description, resume content and job description.
  */
 export const generateResumePdf = async ({ interviewReportId }) => {

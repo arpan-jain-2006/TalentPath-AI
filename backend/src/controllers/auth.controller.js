@@ -3,10 +3,12 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const tokenBlacklistModel = require("../models/blacklist.model")
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const cookieOptions = {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     maxAge: 24 * 60 * 60 * 1000
 }
 
@@ -17,13 +19,22 @@ async function registerUserController(req, res) {
             return res.status(400).json({ message: "Please provide username, email and password" })
         }
 
-        const isUserAlreadyExists = await userModel.findOne({ $or: [{ username }, { email }] })
+        const cleanUsername = username.trim().toLowerCase()
+        const cleanEmail = email.trim().toLowerCase()
+
+        const isUserAlreadyExists = await userModel.findOne({ 
+            $or: [{ username: cleanUsername }, { email: cleanEmail }] 
+        })
         if (isUserAlreadyExists) {
             return res.status(400).json({ message: "Account already exists with this email or username" })
         }
 
         const hash = await bcrypt.hash(password, 10)
-        const user = await userModel.create({ username, email, password: hash })
+        const user = await userModel.create({ 
+            username: cleanUsername, 
+            email: cleanEmail, 
+            password: hash 
+        })
 
         const token = jwt.sign(
             { id: user._id, username: user.username },
@@ -34,10 +45,11 @@ async function registerUserController(req, res) {
         res.cookie("token", token, cookieOptions)
         return res.status(201).json({
             message: "User registered successfully",
-            token, // 👉 Token return ho raha hai
+            token,
             user: { id: user._id, username: user.username, email: user.email }
         })
     } catch (error) {
+        console.error("Register Error:", error)
         return res.status(500).json({ message: "Error registering user", error: error.message })
     }
 }
@@ -49,7 +61,8 @@ async function loginUserController(req, res) {
             return res.status(400).json({ message: "Please provide email and password" })
         }
 
-        const user = await userModel.findOne({ email })
+        const cleanEmail = email.trim().toLowerCase()
+        const user = await userModel.findOne({ email: cleanEmail })
         if (!user) {
             return res.status(400).json({ message: "Invalid email or password" })
         }
@@ -67,11 +80,12 @@ async function loginUserController(req, res) {
 
         res.cookie("token", token, cookieOptions)
         return res.status(200).json({
-            message: "User loggedIn successfully.",
-            token, // 👉 Token return ho raha hai
+            message: "User logged in successfully",
+            token,
             user: { id: user._id, username: user.username, email: user.email }
         })
     } catch (error) {
+        console.error("Login Error:", error)
         return res.status(500).json({ message: "Error logging in", error: error.message })
     }
 }

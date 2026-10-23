@@ -2,7 +2,9 @@ import {
     getAllInterviewReports, 
     generateInterviewReport, 
     getInterviewReportById, 
-    generateResumePdf 
+    generateResumePdf,
+    deleteInterviewReport,
+    getResumePreview 
 } from "../services/interview.api"
 import { useContext } from "react"
 import { InterviewContext } from "../interview.context"
@@ -34,6 +36,10 @@ export const useInterview = () => {
             const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
             const reportData = extractReport(response)
             setReport(reportData)
+            // Prepend new report to recent reports list
+            if (reportData?._id) {
+                setReports(prev => [reportData, ...(prev || [])])
+            }
             return reportData
         } catch (error) {
             console.error("Error generating interview report:", error)
@@ -74,30 +80,80 @@ export const useInterview = () => {
         }
     }
 
-    const getResumePdf = async (interviewReportId) => {
+    const deleteReport = async (interviewId) => {
+        if (!interviewId) return false
+        try {
+            await deleteInterviewReport(interviewId)
+            setReports(prev => (prev || []).filter(r => r._id !== interviewId))
+            if (report?._id === interviewId) {
+                setReport(null)
+            }
+            return true
+        } catch (error) {
+            console.error("Error deleting report:", error)
+            throw error
+        }
+    }
+
+    const fetchResumePreview = async (interviewReportId) => {
+        if (!interviewReportId) return null
+        try {
+            return await getResumePreview(interviewReportId)
+        } catch (error) {
+            console.error("Error loading resume preview:", error)
+            throw error
+        }
+    }
+
+    const getResumePdf = async (interviewReportId, reportTitle = "ATS_Resume") => {
         if (!interviewReportId) return
         setLoading(true)
         try {
+            const cleanTitle = (reportTitle || "ATS_Resume").replace(/[^a-zA-Z0-9_-]/g, "_")
+            const filename = `${cleanTitle}_Resume.pdf`
+
             const response = await generateResumePdf({ interviewReportId })
             
-            // Handle binary/blob response
-            const pdfBlob = response instanceof Blob 
-                ? response 
-                : new Blob([response?.data || response], { type: "application/pdf" })
+            // Force clean application/pdf Blob
+            const rawBlob = response instanceof Blob ? response : new Blob([response?.data || response], { type: "application/pdf" })
+            const pdfBlob = new Blob([rawBlob], { type: "application/pdf" })
 
-            const url = window.URL.createObjectURL(pdfBlob)
+            const blobUrl = window.URL.createObjectURL(pdfBlob)
             const link = document.createElement("a")
-            link.href = url
-            link.setAttribute("download", `resume_${interviewReportId}.pdf`)
+            link.style.display = "none"
+            link.href = blobUrl
+            link.download = filename
+            link.setAttribute("download", filename)
             document.body.appendChild(link)
             link.click()
-            link.remove()
-            window.URL.revokeObjectURL(url)
+
+            // Keep blob URL active for 60 seconds so browser download manager finishes saving file with extension
+            setTimeout(() => {
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link)
+                }
+                window.URL.revokeObjectURL(blobUrl)
+            }, 60000)
+
+            return true
         } catch (error) {
-            console.error("Error downloading resume PDF:", error)
+            console.error("Error downloading resume PDF, falling back to direct server link:", error)
+            const token = localStorage.getItem("token")
+            const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:3000" : "https://talentpath-ai.onrender.com")
+            const directUrl = `${baseUrl}/api/interview/resume/pdf/${interviewReportId}?token=${encodeURIComponent(token || "")}`
+            window.location.href = directUrl
+            return true
         } finally {
             setLoading(false)
         }
+    }
+
+    const openResumePdfInNewTab = (interviewReportId) => {
+        if (!interviewReportId) return
+        const token = localStorage.getItem("token")
+        const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === "localhost" ? "http://localhost:3000" : "https://talentpath-ai.onrender.com")
+        const viewUrl = `${baseUrl}/api/interview/resume/pdf/${interviewReportId}?view=inline&token=${encodeURIComponent(token || "")}`
+        window.open(viewUrl, "_blank")
     }
 
     return { 
@@ -109,6 +165,9 @@ export const useInterview = () => {
         generateReport, 
         getReportById, 
         getReports, 
-        getResumePdf 
+        deleteReport,
+        fetchResumePreview,
+        getResumePdf,
+        openResumePdfInNewTab
     }
 }

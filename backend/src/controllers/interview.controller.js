@@ -1,5 +1,9 @@
 const pdfParse = require("pdf-parse");
-const { generateInterviewReport, generateResumePdf } = require("../services/ai.service");
+const { 
+    generateInterviewReport, 
+    generateResumePdf, 
+    generateResumeStructuredData 
+} = require("../services/ai.service");
 const interviewReportModel = require("../models/interviewReport.model");
 
 /**
@@ -115,6 +119,61 @@ async function getAllInterviewReportsController(req, res) {
 }
 
 /**
+ * @description Controller to get structured ATS resume data & preview HTML.
+ */
+async function getResumePreviewController(req, res) {
+    try {
+        const { interviewReportId } = req.params;
+        const interviewReport = await interviewReportModel.findOne({
+            _id: interviewReportId,
+            user: req.user.id
+        });
+
+        if (!interviewReport) {
+            return res.status(404).json({
+                message: "Interview report not found."
+            });
+        }
+
+        // Return from database cache if already generated for instant response
+        if (interviewReport.resumeData && interviewReport.resumeHtml) {
+            return res.status(200).json({
+                message: "Resume preview fetched successfully.",
+                resumeData: interviewReport.resumeData,
+                html: interviewReport.resumeHtml,
+                fromCache: true
+            });
+        }
+
+        const { resume, jobDescription, selfDescription, title } = interviewReport;
+        const { resumeData, html } = await generateResumeStructuredData({
+            resume,
+            jobDescription,
+            selfDescription,
+            title
+        });
+
+        // Persist to database so subsequent loads and downloads are instantaneous
+        interviewReport.resumeData = resumeData;
+        interviewReport.resumeHtml = html;
+        await interviewReport.save();
+
+        return res.status(200).json({
+            message: "Resume preview generated successfully.",
+            resumeData,
+            html,
+            fromCache: false
+        });
+    } catch (error) {
+        console.error("Error in getResumePreviewController:", error);
+        return res.status(500).json({
+            message: "Error generating resume preview",
+            error: error.message
+        });
+    }
+}
+
+/**
  * @description Controller to generate resume PDF based on user self description, resume and job description.
  */
 async function generateResumePdfController(req, res) {
@@ -129,13 +188,33 @@ async function generateResumePdfController(req, res) {
             });
         }
 
-        const { resume, jobDescription, selfDescription } = interviewReport;
+        const { resume, jobDescription, selfDescription, title, resumeHtml } = interviewReport;
 
-        const pdfBuffer = await generateResumePdf({ resume, jobDescription, selfDescription });
+        // Use cached HTML directly if available for lightning-fast PDF generation (< 500ms)
+        let pdfBuffer;
+        if (resumeHtml) {
+            pdfBuffer = await generateResumePdf({ cachedHtml: resumeHtml });
+        } else {
+            const { resumeData, html } = await generateResumeStructuredData({
+                resume,
+                jobDescription,
+                selfDescription,
+                title
+            });
+            interviewReport.resumeData = resumeData;
+            interviewReport.resumeHtml = html;
+            await interviewReport.save();
+            pdfBuffer = await generateResumePdf({ cachedHtml: html });
+        }
+
+        const safeFilename = (title || "ATS_Resume").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const isInline = req.query?.view === "inline";
+        const disposition = isInline ? "inline" : "attachment";
 
         res.set({
             "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf`
+            "Content-Disposition": `${disposition}; filename="${safeFilename}_Resume.pdf"`,
+            "Content-Length": pdfBuffer.length
         });
 
         return res.send(pdfBuffer);
@@ -148,9 +227,42 @@ async function generateResumePdfController(req, res) {
     }
 }
 
+/**
+ * @description Controller to delete an interview report by interviewId.
+ */
+async function deleteInterviewReportController(req, res) {
+    try {
+        const { interviewId } = req.params;
+
+        const deletedReport = await interviewReportModel.findOneAndDelete({
+            _id: interviewId,
+            user: req.user.id
+        });
+
+        if (!deletedReport) {
+            return res.status(404).json({
+                message: "Interview report not found or already deleted."
+            });
+        }
+
+        return res.status(200).json({
+            message: "Interview report deleted successfully.",
+            interviewId
+        });
+    } catch (error) {
+        console.error("Error in deleteInterviewReportController:", error);
+        return res.status(500).json({
+            message: "Server error deleting interview report",
+            error: error.message
+        });
+    }
+}
+
 module.exports = { 
     generateInterViewReportController, 
     getInterviewReportByIdController, 
     getAllInterviewReportsController, 
-    generateResumePdfController 
+    getResumePreviewController,
+    generateResumePdfController,
+    deleteInterviewReportController
 };

@@ -86,16 +86,25 @@ const interviewReportSchema = new mongoose.Schema({
     preparationPlan: [ preparationPlanSchema ],
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "users"
+        ref: "users",
+        index: true
     },
     title: {
         type: String,
         required: [ true, "Job title is required" ]
+    },
+    resumeData: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    resumeHtml: {
+        type: String
     }
 }, {
     timestamps: true
 })
 
+// Compound index for ultra-fast user report fetching sorted by latest
+interviewReportSchema.index({ user: 1, createdAt: -1 });
 
 const interviewReportModel = mongoose.model("InterviewReport", interviewReportSchema);
 
