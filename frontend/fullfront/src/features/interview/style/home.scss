@@ -737,3 +737,238 @@ $accent-color: #818cf8;
     }
   }
 }
+
+// ==========================================
+// --- Full-Responsive Breakpoints for Home ---
+// ==========================================
+
+@media (max-width: 768px) {
+  .home-page {
+    padding: 2rem 1rem 2.5rem 1rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.75rem;
+
+    h1 {
+      font-size: 2.15rem;
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+  }
+
+  .interview-card {
+    border-radius: 18px;
+
+    &__body {
+      padding: 1.5rem 1.25rem;
+      gap: 1.5rem;
+    }
+
+    &__footer {
+      padding: 1.15rem 1.5rem;
+    }
+  }
+
+  .recent-reports {
+    margin-top: 2.75rem;
+
+    .reports-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page {
+    padding: 1.25rem 0.75rem 2rem 0.75rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.35rem;
+
+    .badge-tag {
+      font-size: 0.72rem;
+      padding: 0.3rem 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.65rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 0.85rem;
+    }
+
+    .quick-templates {
+      flex-direction: column;
+      gap: 0.4rem;
+
+      .templates-label {
+        width: 100%;
+        text-align: center;
+        font-size: 0.75rem;
+      }
+
+      .template-pills {
+        justify-content: center;
+        gap: 0.35rem;
+
+        .template-pill {
+          font-size: 0.72rem;
+          padding: 0.25rem 0.65rem;
+        }
+      }
+    }
+  }
+
+  .error-banner {
+    padding: 0.75rem 1rem;
+    font-size: 0.825rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+  }
+
+  .interview-card {
+    border-radius: 16px;
+
+    &__body {
+      padding: 1.15rem 0.85rem;
+      gap: 1.25rem;
+    }
+
+    &__footer {
+      padding: 1rem 0.85rem;
+      flex-direction: column;
+      gap: 0.85rem;
+      align-items: stretch;
+
+      .footer-info {
+        justify-content: center;
+        font-size: 0.78rem;
+      }
+
+      .generate-btn {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 0.925rem;
+      }
+    }
+  }
+
+  .panel {
+    gap: 0.75rem;
+
+    &__header .title-wrap h2 {
+      font-size: 1.05rem;
+    }
+
+    &__textarea {
+      min-height: 150px;
+      font-size: 0.85rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+
+      &--short {
+        min-height: 80px;
+      }
+    }
+  }
+
+  .dropzone {
+    padding: 1.1rem 0.65rem;
+    border-radius: 10px;
+
+    &__title {
+      font-size: 0.825rem;
+    }
+
+    &__subtitle {
+      font-size: 0.72rem;
+    }
+  }
+
+  .info-box {
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+
+    p {
+      font-size: 0.76rem;
+    }
+  }
+
+  .recent-reports {
+    margin-top: 2.25rem;
+
+    .section-heading {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+
+      h2 {
+        font-size: 1.25rem;
+      }
+
+      .reports-search-wrap {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+
+        .reports-search-input {
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .report-count {
+          text-align: right;
+          font-size: 0.8rem;
+        }
+      }
+    }
+
+    .reports-grid {
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+    }
+
+    .report-card {
+      padding: 1rem 0.9rem;
+      border-radius: 14px;
+
+      h3 {
+        font-size: 0.98rem;
+      }
+    }
+  }
+
+  .page-footer {
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+
+    a {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .page-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .interview-card__body {
+    padding: 1rem 0.65rem;
+  }
+}

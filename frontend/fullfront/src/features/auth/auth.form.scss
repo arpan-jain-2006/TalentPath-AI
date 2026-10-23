@@ -321,7 +321,53 @@ $input-focus: #6366f1;
 
 // --- Responsive Adjustments ---
 @media (max-width: 480px) {
+  .login-page {
+    padding: 1rem 0.75rem;
+  }
+
   .form-container {
-    padding: 2rem 1.5rem;
+    padding: 1.85rem 1.25rem;
+    border-radius: 16px;
+
+    .form-header {
+      margin-bottom: 1.25rem;
+
+      .form-title {
+        font-size: 1.55rem;
+      }
+
+      .form-subtitle {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .form {
+    gap: 1.1rem;
+
+    .input-group .input-wrapper input {
+      padding: 0.75rem 0.95rem;
+      font-size: 0.9rem;
+    }
+
+    .primary-button {
+      padding: 0.8rem;
+      font-size: 0.925rem;
+    }
+  }
+
+  .form-footer {
+    margin-top: 1.35rem;
+    font-size: 0.825rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .form-container {
+    padding: 1.5rem 1rem;
+
+    .form-header .form-title {
+      font-size: 1.35rem;
+    }
   }
 }

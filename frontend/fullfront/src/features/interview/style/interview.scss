@@ -1314,3 +1314,332 @@ $accent: #818cf8;
     }
   }
 }
+
+// ==========================================
+// --- Full-Responsive Breakpoints for Interview ---
+// ==========================================
+
+@media (max-width: 1200px) and (min-width: 861px) {
+  .interview-layout {
+    grid-template-columns: 240px 1fr;
+  }
+
+  .interview-sidebar {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .interview-page {
+    padding: 1rem 0.75rem 2.5rem 0.75rem;
+  }
+
+  .interview-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+
+    .topbar-left {
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .role-title-badge {
+      max-width: 220px;
+      font-size: 0.75rem;
+    }
+
+    .topbar-right {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .interview-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Segmented Mobile Horizontal Navigation */
+  .interview-nav {
+    position: static;
+    top: 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: 14px;
+    gap: 0;
+
+    &__label {
+      display: none;
+    }
+
+    .nav-links {
+      flex-direction: row;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 0.45rem;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    &__item {
+      flex-shrink: 0;
+      width: auto;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.8rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+
+      .nav-text {
+        white-space: nowrap;
+      }
+
+      .nav-item-badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.35rem;
+        margin-left: 0.35rem;
+      }
+    }
+
+    .nav-footer-action {
+      display: none;
+    }
+  }
+
+  /* Main Pane */
+  .interview-main {
+    .pane-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      .pane-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .search-box {
+          width: 100%;
+
+          .search-input {
+            width: 100%;
+            box-sizing: border-box;
+          }
+        }
+
+        .expand-toggle-btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  /* Questions Cards */
+  .q-card {
+    border-radius: 12px;
+
+    &__header {
+      padding: 1rem;
+      gap: 0.65rem;
+
+      .q-card__title {
+        font-size: 0.925rem;
+      }
+    }
+
+    &__body {
+      padding: 0 1rem 1rem 1rem;
+      gap: 0.65rem;
+    }
+
+    &__section {
+      padding: 0.85rem;
+      font-size: 0.825rem;
+    }
+  }
+
+  /* Roadmap */
+  .roadmap-day {
+    padding: 1rem;
+
+    &__timeline {
+      margin-right: 0.75rem;
+
+      .roadmap-day__badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+      }
+    }
+
+    &__content {
+      .roadmap-day__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+      }
+
+      .task-item {
+        font-size: 0.825rem;
+        padding: 0.45rem 0.65rem;
+      }
+    }
+  }
+
+  /* ATS Resume Studio on Mobile */
+  .resume-studio-pane {
+    .resume-studio-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+
+      .resume-actions-bar {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .copy-plain-btn,
+        .open-tab-btn,
+        .download-pdf-btn {
+          width: 100%;
+          justify-content: center;
+          padding: 0.7rem 0.85rem;
+          font-size: 0.85rem;
+          box-sizing: border-box;
+        }
+      }
+    }
+
+    /* Simulated A4 Paper on Mobile */
+    .resume-preview-sheet {
+      padding: 1.25rem 0.85rem;
+      border-radius: 8px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+
+      .r-header {
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+
+        .r-name {
+          font-size: 15pt;
+          letter-spacing: -0.01em;
+          line-height: 1.2;
+        }
+
+        .r-target-role {
+          font-size: 10pt;
+          margin-bottom: 4px;
+        }
+
+        .r-contact {
+          font-size: 8pt;
+          gap: 4px;
+          flex-direction: column;
+          align-items: center;
+          line-height: 1.3;
+        }
+      }
+
+      .r-section {
+        margin-bottom: 10px;
+
+        .r-section-title {
+          font-size: 9pt;
+          padding-bottom: 2px;
+          margin-bottom: 4px;
+        }
+
+        .r-summary-text {
+          font-size: 8.2pt;
+          line-height: 1.4;
+        }
+
+        .r-skills-list .r-skill-line {
+          font-size: 8.2pt;
+          line-height: 1.35;
+        }
+
+        .r-entry {
+          margin-bottom: 7px;
+
+          .r-entry-head {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            margin-bottom: 2px;
+
+            .r-role {
+              font-size: 8.8pt;
+            }
+
+            .r-company, .r-tech {
+              font-size: 8.2pt;
+            }
+
+            .r-period {
+              font-size: 7.8pt;
+              margin-top: 1px;
+            }
+          }
+
+          .r-bullets {
+            margin-left: 14px;
+
+            li {
+              font-size: 8.2pt;
+              line-height: 1.35;
+              margin-bottom: 2px;
+            }
+          }
+        }
+
+        .r-edu-line {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          font-size: 8.4pt;
+
+          .r-period {
+            font-size: 7.8pt;
+          }
+        }
+      }
+    }
+  }
+
+  /* Right Sidebar when stacked on Mobile */
+  .interview-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .metric-box {
+      padding: 1.15rem;
+      border-radius: 14px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .interview-page {
+    padding: 0.75rem 0.5rem 2rem 0.5rem;
+  }
+
+  .role-title-badge {
+    max-width: 140px;
+    font-size: 0.7rem;
+  }
+}
