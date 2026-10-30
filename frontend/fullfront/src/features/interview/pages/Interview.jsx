@@ -196,6 +196,7 @@ const Interview = () => {
   const [resumeHtml, setResumeHtml] = useState("");
   const [loadingResumePreview, setLoadingResumePreview] = useState(false);
   const [copiedPlainText, setCopiedPlainText] = useState(false);
+  const [previewModalImage, setPreviewModalImage] = useState(null);
 
   const { 
     report: rawReport, 
@@ -823,6 +824,44 @@ const Interview = () => {
               </div>
             </div>
 
+            {/* Stored Screenshots Card */}
+            {(report?.jobDescriptionImage || report?.selfDescriptionImage) && (
+              <div className="metric-box screenshots-card">
+                <div className="metric-header">
+                  <p className="metric-title">Stored Screenshots</p>
+                  <span className="badge-small">In DB</span>
+                </div>
+                <div className="stored-screenshots-grid">
+                  {report?.jobDescriptionImage && (
+                    <div 
+                      className="stored-screenshot-item"
+                      onClick={() => setPreviewModalImage({ url: report.jobDescriptionImage, title: "Company Job Description Screenshot" })}
+                      title="Click to view full screenshot"
+                    >
+                      <div className="thumb-container">
+                        <img src={report.jobDescriptionImage} alt="JD Screenshot" />
+                        <span className="zoom-label">🔍 Enlarge</span>
+                      </div>
+                      <span className="screenshot-label">JD Screenshot</span>
+                    </div>
+                  )}
+                  {report?.selfDescriptionImage && (
+                    <div 
+                      className="stored-screenshot-item"
+                      onClick={() => setPreviewModalImage({ url: report.selfDescriptionImage, title: "Candidate Profile Screenshot" })}
+                      title="Click to view full screenshot"
+                    >
+                      <div className="thumb-container">
+                        <img src={report.selfDescriptionImage} alt="Profile Screenshot" />
+                        <span className="zoom-label">🔍 Enlarge</span>
+                      </div>
+                      <span className="screenshot-label">Profile Screenshot</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Preparation Tips Box */}
             <div className="metric-box tips-card">
               <div className="metric-header">
@@ -836,6 +875,31 @@ const Interview = () => {
             </div>
           </aside>
         </div>
+
+        {/* Screenshot Lightbox Preview Modal */}
+        {previewModalImage && (
+          <div className="image-lightbox-overlay" onClick={() => setPreviewModalImage(null)}>
+            <div className="image-lightbox-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="lightbox-header">
+                <div className="lightbox-title-wrap">
+                  <span className="lightbox-icon">🖼️</span>
+                  <h3>{previewModalImage.title}</h3>
+                </div>
+                <button 
+                  type="button" 
+                  className="lightbox-close-btn"
+                  onClick={() => setPreviewModalImage(null)}
+                  title="Close preview"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="lightbox-image-wrap">
+                <img src={previewModalImage.url} alt={previewModalImage.title} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,12 +27,22 @@ const Home = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [selfDescription, setSelfDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  
+  // Screenshots state
+  const [jdImageFile, setJdImageFile] = useState(null);
+  const [jdImagePreview, setJdImagePreview] = useState(null);
+  const [selfImageFile, setSelfImageFile] = useState(null);
+  const [selfImagePreview, setSelfImagePreview] = useState(null);
+  const [previewModalImage, setPreviewModalImage] = useState(null);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const resumeInputRef = useRef();
+  const jdImageInputRef = useRef();
+  const selfImageInputRef = useRef();
   const navigate = useNavigate();
 
   // Load existing user reports on mount
@@ -40,11 +50,19 @@ const Home = () => {
     getReports().catch(() => {});
   }, []);
 
+  // Cleanup object URLs on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (jdImagePreview) URL.revokeObjectURL(jdImagePreview);
+      if (selfImagePreview) URL.revokeObjectURL(selfImagePreview);
+    };
+  }, [jdImagePreview, selfImagePreview]);
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 3 * 1024 * 1024) {
-        setErrorMessage("File exceeds 3MB limit. Please upload a smaller file.");
+      if (file.size > 8 * 1024 * 1024) {
+        setErrorMessage("Resume file exceeds 8MB limit. Please upload a smaller PDF.");
         return;
       }
       setSelectedFile(file);
@@ -60,6 +78,64 @@ const Home = () => {
     }
   };
 
+  // JD Screenshot Handlers
+  const handleJdImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith("image/")) {
+        setErrorMessage("Please select a valid image file (PNG, JPG, JPEG, WEBP).");
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setErrorMessage("JD Screenshot exceeds 8MB limit. Please choose a smaller image.");
+        return;
+      }
+      if (jdImagePreview) {
+        URL.revokeObjectURL(jdImagePreview);
+      }
+      setJdImageFile(file);
+      setJdImagePreview(URL.createObjectURL(file));
+      setErrorMessage("");
+    }
+  };
+
+  const handleRemoveJdImage = (e) => {
+    e.stopPropagation();
+    if (jdImagePreview) URL.revokeObjectURL(jdImagePreview);
+    setJdImageFile(null);
+    setJdImagePreview(null);
+    if (jdImageInputRef.current) jdImageInputRef.current.value = "";
+  };
+
+  // Self Profile Screenshot Handlers
+  const handleSelfImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith("image/")) {
+        setErrorMessage("Please select a valid image file (PNG, JPG, JPEG, WEBP).");
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setErrorMessage("Profile Screenshot exceeds 8MB limit. Please choose a smaller image.");
+        return;
+      }
+      if (selfImagePreview) {
+        URL.revokeObjectURL(selfImagePreview);
+      }
+      setSelfImageFile(file);
+      setSelfImagePreview(URL.createObjectURL(file));
+      setErrorMessage("");
+    }
+  };
+
+  const handleRemoveSelfImage = (e) => {
+    e.stopPropagation();
+    if (selfImagePreview) URL.revokeObjectURL(selfImagePreview);
+    setSelfImageFile(null);
+    setSelfImagePreview(null);
+    if (selfImageInputRef.current) selfImageInputRef.current.value = "";
+  };
+
   const handleApplyTemplate = (template) => {
     setJobDescription(template.jd);
     setSelfDescription(template.summary);
@@ -70,19 +146,29 @@ const Home = () => {
     setErrorMessage("");
     const resumeFile = selectedFile || resumeInputRef.current?.files?.[0];
 
-    if (!jobDescription.trim()) {
-      setErrorMessage("Target Job Description is required.");
+    // Must have at least JD text OR JD Screenshot
+    const hasJd = jobDescription.trim().length > 0 || Boolean(jdImageFile);
+    if (!hasJd) {
+      setErrorMessage("Target Job Description is required. Paste job text or upload a JD screenshot.");
       return;
     }
 
-    if (!resumeFile && !selfDescription.trim()) {
-      setErrorMessage("Please upload a resume (PDF) or provide a quick self-description.");
+    // Must have at least Resume (PDF) OR Self Description text OR Profile Screenshot
+    const hasProfile = Boolean(resumeFile) || selfDescription.trim().length > 0 || Boolean(selfImageFile);
+    if (!hasProfile) {
+      setErrorMessage("Please provide your profile via Resume (PDF), Profile Screenshot, or Quick Summary.");
       return;
     }
 
     try {
       setIsGenerating(true);
-      const data = await generateReport({ jobDescription, selfDescription, resumeFile });
+      const data = await generateReport({ 
+        jobDescription: jobDescription.trim(), 
+        selfDescription: selfDescription.trim(), 
+        resumeFile,
+        jdImageFile,
+        selfImageFile
+      });
       if (data?._id) {
         navigate(`/interview/${data._id}`);
       }
@@ -203,18 +289,91 @@ const Home = () => {
                   </span>
                   <h2>Target Job Description</h2>
                 </div>
-                <span className="badge badge--required">Required</span>
+                <span className={`badge ${jobDescription || jdImageFile ? "badge--best" : "badge--required"}`}>
+                  {jobDescription || jdImageFile ? "✓ Ready" : "Required"}
+                </span>
               </div>
 
               <textarea
                 onChange={(e) => { setJobDescription(e.target.value); setErrorMessage(""); }}
                 value={jobDescription}
                 className="panel__textarea"
-                placeholder="Paste the full job description here... (Responsibilities, requirements, tech stack, expectations, etc.)"
+                placeholder="Paste the full job description text here, or upload a JD screenshot below..."
                 maxLength={5000}
-                required
               />
               <div className="char-counter">{jobDescription.length} / 5000 chars</div>
+
+              {/* JD Screenshot Upload Area */}
+              <div className="screenshot-upload-wrapper">
+                <div className="screenshot-upload-header">
+                  <span className="screenshot-upload-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    Company JD Screenshot
+                  </span>
+                  <span className="badge badge--neutral">Text &bull; Screenshot</span>
+                </div>
+
+                {jdImagePreview ? (
+                  <div className="screenshot-preview-card">
+                    <div 
+                      className="screenshot-thumb-box"
+                      onClick={() => setPreviewModalImage({ url: jdImagePreview, title: "Company JD Screenshot" })}
+                      title="Click to enlarge"
+                    >
+                      <img src={jdImagePreview} alt="JD Screenshot Preview" />
+                      <div className="zoom-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="screenshot-info">
+                      <p className="screenshot-filename">{jdImageFile?.name}</p>
+                      <p className="screenshot-filesize">{((jdImageFile?.size || 0) / 1024 / 1024).toFixed(2)} MB &bull; Ready for AI analysis</p>
+                      <span className="screenshot-tag">✓ JD Image Attached &amp; Saved to DB</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="remove-file-btn"
+                      onClick={handleRemoveJdImage}
+                      title="Remove JD screenshot"
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    className="screenshot-dropzone"
+                    onClick={() => jdImageInputRef.current?.click()}
+                  >
+                    <span className="screenshot-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                    </span>
+                    <div className="dropzone-text-group">
+                      <p className="dropzone-main-text">Upload Company JD Screenshot / Image</p>
+                      <p className="dropzone-sub-text">PNG, JPG, WebP up to 8MB &bull; LinkedIn, Naukri, or Portal</p>
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  ref={jdImageInputRef}
+                  hidden
+                  type="file"
+                  id="jdImage"
+                  name="jdImage"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleJdImageChange}
+                />
+              </div>
             </div>
 
             {/* Vertical Divider */}
@@ -232,12 +391,15 @@ const Home = () => {
                   </span>
                   <h2>Your Profile & Background</h2>
                 </div>
+                <span className={`badge ${selectedFile || selfDescription || selfImageFile ? "badge--best" : "badge--required"}`}>
+                  {selectedFile || selfDescription || selfImageFile ? "✓ Ready" : "Required"}
+                </span>
               </div>
 
               {/* Upload Resume */}
               <div className="upload-section">
                 <label className="section-label">
-                  Upload Resume
+                  Upload Resume (PDF)
                   <span className="badge badge--best">Recommended</span>
                 </label>
 
@@ -263,7 +425,7 @@ const Home = () => {
                     {selectedFile ? selectedFile.name : "Click to select or drag & drop resume"}
                   </p>
                   <p className="dropzone__subtitle">
-                    {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready` : "PDF format (Max 3MB)"}
+                    {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready` : "PDF format (Max 8MB)"}
                   </p>
 
                   {selectedFile && (
@@ -294,6 +456,83 @@ const Home = () => {
                 <span>OR</span>
               </div>
 
+              {/* Self Profile Screenshot Upload Area */}
+              <div className="screenshot-upload-wrapper">
+                <div className="screenshot-upload-header">
+                  <span className="screenshot-upload-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    Profile / Bio Screenshot
+                  </span>
+                  <span className="badge badge--best">Image Option</span>
+                </div>
+
+                {selfImagePreview ? (
+                  <div className="screenshot-preview-card">
+                    <div 
+                      className="screenshot-thumb-box"
+                      onClick={() => setPreviewModalImage({ url: selfImagePreview, title: "Candidate Profile Screenshot" })}
+                      title="Click to enlarge"
+                    >
+                      <img src={selfImagePreview} alt="Self Profile Screenshot Preview" />
+                      <div className="zoom-overlay">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="screenshot-info">
+                      <p className="screenshot-filename">{selfImageFile?.name}</p>
+                      <p className="screenshot-filesize">{((selfImageFile?.size || 0) / 1024 / 1024).toFixed(2)} MB &bull; Ready for AI analysis</p>
+                      <span className="screenshot-tag">✓ Profile Image Attached &amp; Saved to DB</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="remove-file-btn"
+                      onClick={handleRemoveSelfImage}
+                      title="Remove profile screenshot"
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    className="screenshot-dropzone"
+                    onClick={() => selfImageInputRef.current?.click()}
+                  >
+                    <span className="screenshot-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                    </span>
+                    <div className="dropzone-text-group">
+                      <p className="dropzone-main-text">Upload Candidate Profile / Bio Screenshot</p>
+                      <p className="dropzone-sub-text">PNG, JPG, WebP &bull; LinkedIn snippet, bio, or resume picture</p>
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  ref={selfImageInputRef}
+                  hidden
+                  type="file"
+                  id="selfImage"
+                  name="selfImage"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleSelfImageChange}
+                />
+              </div>
+
+              {/* OR Divider */}
+              <div className="or-divider">
+                <span>OR</span>
+              </div>
+
               {/* Quick Self-Description */}
               <div className="self-description">
                 <label className="section-label" htmlFor="selfDescription">Quick Summary</label>
@@ -316,7 +555,7 @@ const Home = () => {
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                 </span>
-                <p>Either a <strong>Resume (PDF)</strong> or a <strong>Quick Summary</strong> is required for personalized matching.</p>
+                <p>Provide your background via <strong>Resume (PDF)</strong>, <strong>Profile Screenshot</strong>, or a <strong>Quick Summary</strong>.</p>
               </div>
             </div>
           </div>
@@ -427,6 +666,31 @@ const Home = () => {
         <footer className="page-footer">
           <span>&copy; {new Date().getFullYear()} TalentPath AI. Empowering next-generation software careers.</span>
         </footer>
+
+        {/* Screenshot Lightbox Preview Modal */}
+        {previewModalImage && (
+          <div className="image-lightbox-overlay" onClick={() => setPreviewModalImage(null)}>
+            <div className="image-lightbox-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="lightbox-header">
+                <div className="lightbox-title-wrap">
+                  <span className="lightbox-icon">🖼️</span>
+                  <h3>{previewModalImage.title}</h3>
+                </div>
+                <button 
+                  type="button" 
+                  className="lightbox-close-btn"
+                  onClick={() => setPreviewModalImage(null)}
+                  title="Close preview"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="lightbox-image-wrap">
+                <img src={previewModalImage.url} alt={previewModalImage.title} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

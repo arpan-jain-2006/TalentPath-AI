@@ -67,13 +67,23 @@ const preparationPlanSchema = new mongoose.Schema({
 const interviewReportSchema = new mongoose.Schema({
     jobDescription: {
         type: String,
-        required: [ true, "Job description is required" ]
+        default: ""
+    },
+    jobDescriptionImage: {
+        type: String, // Stored as Base64 Data URL (data:image/...;base64,...)
+        default: null
     },
     resume: {
         type: String,
+        default: ""
     },
     selfDescription: {
         type: String,
+        default: ""
+    },
+    selfDescriptionImage: {
+        type: String, // Stored as Base64 Data URL (data:image/...;base64,...)
+        default: null
     },
     matchScore: {
         type: Number,

@@ -64,7 +64,7 @@ app.use((err, req, res, next) => {
     console.error("Unhandled Error:", err.message || err)
     if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({
-            message: "Uploaded file is too large. Maximum allowed size is 3MB."
+            message: "Uploaded file is too large. Maximum allowed size is 8MB."
         })
     }
     return res.status(err.status || 500).json({

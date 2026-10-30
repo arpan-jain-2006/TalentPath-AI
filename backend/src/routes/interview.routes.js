@@ -12,7 +12,18 @@ const interviewRouter = express.Router()
  * @description generate new interview report on the basis of user self description,resume pdf and job description.
  * @access private
  */
-interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), interviewController.generateInterViewReportController)
+interviewRouter.post(
+    "/", 
+    authMiddleware.authUser, 
+    upload.fields([
+        { name: "resume", maxCount: 1 },
+        { name: "jdImage", maxCount: 1 },
+        { name: "jobDescriptionImage", maxCount: 1 },
+        { name: "selfImage", maxCount: 1 },
+        { name: "selfDescriptionImage", maxCount: 1 }
+    ]), 
+    interviewController.generateInterViewReportController
+)
 
 /**
  * @route GET /api/interview/report/:interviewId

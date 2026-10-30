@@ -30,10 +30,22 @@ export const useInterview = () => {
         return res.interviewReports || res.data?.interviewReports || res.data || res || []
     }
 
-    const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
+    const generateReport = async ({ 
+        jobDescription, 
+        selfDescription, 
+        resumeFile, 
+        jdImageFile, 
+        selfImageFile 
+    }) => {
         setLoading(true)
         try {
-            const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
+            const response = await generateInterviewReport({ 
+                jobDescription, 
+                selfDescription, 
+                resumeFile, 
+                jdImageFile, 
+                selfImageFile 
+            })
             const reportData = extractReport(response)
             setReport(reportData)
             // Prepend new report to recent reports list
