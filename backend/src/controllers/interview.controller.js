@@ -4,6 +4,7 @@ const {
     generateResumePdf, 
     generateResumeStructuredData 
 } = require("../services/ai.service");
+const { executeCode, runTestCases } = require("../services/codeExecution.service");
 const interviewReportModel = require("../models/interviewReport.model");
 
 /**
@@ -315,11 +316,57 @@ async function deleteInterviewReportController(req, res) {
     }
 }
 
+/**
+ * @description Controller to execute C, C++, Java, Python, and JavaScript code against custom input or test cases.
+ */
+async function runCodeController(req, res) {
+    try {
+        const { language, code, input, testCases } = req.body;
+
+        if (!code || typeof code !== "string" || !code.trim()) {
+            return res.status(400).json({
+                message: "Source code is required."
+            });
+        }
+
+        if (!language) {
+            return res.status(400).json({
+                message: "Language is required (javascript, python, java, cpp, c)."
+            });
+        }
+
+        // Run against test cases if provided
+        if (Array.isArray(testCases) && testCases.length > 0) {
+            const testResult = await runTestCases({ language, code, testCases });
+            return res.status(200).json({
+                success: true,
+                ...testResult
+            });
+        }
+
+        // Run standalone with custom input
+        const result = await executeCode({ language, code, input });
+        return res.status(200).json({
+            success: result.success,
+            output: result.output,
+            stderr: result.stderr || result.error || "",
+            executionTimeMs: result.executionTimeMs
+        });
+    } catch (error) {
+        console.error("Error in runCodeController:", error);
+        return res.status(500).json({
+            message: "Execution runner error",
+            error: error.message
+        });
+    }
+}
+
 module.exports = { 
     generateInterViewReportController, 
     getInterviewReportByIdController, 
     getAllInterviewReportsController, 
     getResumePreviewController,
     generateResumePdfController,
-    deleteInterviewReportController
+    deleteInterviewReportController,
+    runCodeController
 };

@@ -63,4 +63,11 @@ interviewRouter.get("/resume/pdf/:interviewReportId", authMiddleware.authUser, i
  */
 interviewRouter.delete("/:interviewId", authMiddleware.authUser, interviewController.deleteInterviewReportController)
 
+/**
+ * @route POST /api/interview/code/run
+ * @description execute code against custom input or test cases across C, C++, Java, Python, and JavaScript.
+ * @access private
+ */
+interviewRouter.post("/code/run", authMiddleware.authUser, interviewController.runCodeController)
+
 module.exports = interviewRouter

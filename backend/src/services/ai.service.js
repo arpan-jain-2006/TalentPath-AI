@@ -73,9 +73,84 @@ const interviewReportSchema = {
                 },
                 required: ["day", "focus", "tasks"]
             }
+        },
+        assessment: {
+            type: Type.OBJECT,
+            description: "Online Assessment round with 10 role-specific MCQs and 2 live DSA coding questions",
+            properties: {
+                mcqs: {
+                    type: Type.ARRAY,
+                    description: "Array of exactly 10 high-impact multiple choice questions tailored to the job requirements (language internals, APIs, database indexing, and system logic). Each question has 4 realistic options, 0-indexed correctIndex (0 to 3), and clear technical explanation.",
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            question: { type: Type.STRING },
+                            options: { 
+                                type: Type.ARRAY, 
+                                items: { type: Type.STRING },
+                                description: "Array of exactly 4 choices"
+                            },
+                            correctIndex: { type: Type.NUMBER, description: "Index of correct option: 0, 1, 2, or 3" },
+                            explanation: { type: Type.STRING, description: "Authoritative explanation of why the answer is correct" },
+                            category: { type: Type.STRING, description: "Subject category like React, Node.js, DB, System Design, JavaScript" }
+                        },
+                        required: ["question", "options", "correctIndex", "explanation", "category"]
+                    }
+                },
+                dsaQuestions: {
+                    type: Type.ARRAY,
+                    description: "Array of exactly 2 practical DSA coding problems: Question 1 is Easy level (10 min limit), Question 2 is Medium level (30 min limit). Includes starter code for javascript, python, java, cpp, and c.",
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING },
+                            difficulty: { type: Type.STRING, description: "Easy or Medium" },
+                            timeLimitMinutes: { type: Type.NUMBER, description: "10 for Easy, 30 for Medium" },
+                            problemStatement: { type: Type.STRING },
+                            constraints: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            examples: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        input: { type: Type.STRING },
+                                        output: { type: Type.STRING },
+                                        explanation: { type: Type.STRING }
+                                    },
+                                    required: ["input", "output"]
+                                }
+                            },
+                            starterCode: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    javascript: { type: Type.STRING },
+                                    python: { type: Type.STRING },
+                                    java: { type: Type.STRING },
+                                    cpp: { type: Type.STRING },
+                                    c: { type: Type.STRING }
+                                },
+                                required: ["javascript", "python", "java", "cpp", "c"]
+                            },
+                            testCases: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        input: { type: Type.STRING },
+                                        expectedOutput: { type: Type.STRING }
+                                    },
+                                    required: ["input", "expectedOutput"]
+                                }
+                            }
+                        },
+                        required: ["title", "difficulty", "timeLimitMinutes", "problemStatement", "constraints", "examples", "starterCode", "testCases"]
+                    }
+                }
+            },
+            required: ["mcqs", "dsaQuestions"]
         }
     },
-    required: ["title", "matchScore", "technicalQuestions", "behavioralQuestions", "skillGaps", "preparationPlan"]
+    required: ["title", "matchScore", "technicalQuestions", "behavioralQuestions", "skillGaps", "preparationPlan", "assessment"]
 }
 
 const { renderAtsResumeHtml } = require("./resumeTemplate")
@@ -446,13 +521,411 @@ function generateFallbackInterviewReport({ resume = "", selfDescription = "", jo
         }
     ];
 
+    const assessment = {
+        mcqs: [
+            {
+                question: "In the JavaScript Event Loop, which queue takes highest priority immediately after the synchronous execution stack finishes?",
+                options: [
+                    "Macrotask Queue (setTimeout, setInterval)",
+                    "Microtask Queue (Promises, queueMicrotask, process.nextTick)",
+                    "RequestAnimationFrame callback queue",
+                    "Network I/O polling queue"
+                ],
+                correctIndex: 1,
+                explanation: "The microtask queue (Promise callbacks, queueMicrotask) has higher priority than the macrotask queue. The event loop exhausts all pending microtasks before processing the next macrotask.",
+                category: "JavaScript Core"
+            },
+            {
+                question: "What is the primary difference between 'useMemo' and 'useCallback' in React?",
+                options: [
+                    "'useMemo' caches a function definition, whereas 'useCallback' caches a computed value",
+                    "'useMemo' caches the return value of an expensive calculation, whereas 'useCallback' caches a function reference between renders",
+                    "'useMemo' is used only for server components, while 'useCallback' is client-only",
+                    "There is no difference; they are aliases for the same internal hook"
+                ],
+                correctIndex: 1,
+                explanation: "useMemo caches the result of running an expensive computation. useCallback caches the function definition itself across renders, preventing unneeded child re-renders.",
+                category: "React Framework"
+            },
+            {
+                question: "In MongoDB, which compound indexing sequence is recommended by the ESR rule?",
+                options: [
+                    "Equality first, then Range, then Sort",
+                    "Equality first, then Sort, then Range",
+                    "Sort first, then Equality, then Range",
+                    "Range first, then Sort, then Equality"
+                ],
+                correctIndex: 1,
+                explanation: "The ESR (Equality, Sort, Range) rule states index keys should be structured: 1) Equality fields (exact match), 2) Sort fields (order direction), and 3) Range fields (inequality operators like $gt, $lt).",
+                category: "Database Engineering"
+            },
+            {
+                question: "When a browser sends an HTTP OPTIONS request before a cross-origin POST request with custom headers, what is this called?",
+                options: [
+                    "HTTP Keep-Alive Handshake",
+                    "CORS Preflight Request",
+                    "TLS Session Negotiation",
+                    "WebSocket Upgrade Ping"
+                ],
+                correctIndex: 1,
+                explanation: "Browsers automatically dispatch a CORS Preflight OPTIONS request to verify whether the target origin permits the request headers and methods before executing the actual payload.",
+                category: "Web Security & Protocols"
+            },
+            {
+                question: "What is the lookup time complexity of an element in an unsorted array versus a balanced Binary Search Tree (AVL / Red-Black)?",
+                options: [
+                    "Unsorted Array: O(1); Balanced BST: O(N)",
+                    "Unsorted Array: O(N); Balanced BST: O(log N)",
+                    "Unsorted Array: O(log N); Balanced BST: O(1)",
+                    "Unsorted Array: O(N^2); Balanced BST: O(N)"
+                ],
+                correctIndex: 1,
+                explanation: "Searching an unsorted array takes linear O(N) worst-case time. In a balanced BST, each branch decision halves the search tree, giving logarithmic O(log N) lookup.",
+                category: "Data Structures & Algorithms"
+            },
+            {
+                question: "Which of the following commonly triggers a memory leak in single-page React applications?",
+                options: [
+                    "Using const and let inside functions",
+                    "Uncleared setInterval timers or unremoved global window event listeners on component unmount",
+                    "Using CSS Flexbox instead of CSS Grid",
+                    "Passing props between parent and child components"
+                ],
+                correctIndex: 1,
+                explanation: "Uncleared intervals and unremoved window/document listeners hold closures to component state, preventing the browser garbage collector from reclaiming memory when components unmount.",
+                category: "Performance & Profiling"
+            },
+            {
+                question: "What is the primary benefit of HTTP/2 multiplexing compared to HTTP/1.1?",
+                options: [
+                    "It replaces JSON with XML data",
+                    "It allows multiple concurrent bidirectional request/response streams over a single TCP connection, eliminating head-of-line blocking at the HTTP layer",
+                    "It automatically converts images to WebP format",
+                    "It bypasses TLS encryption for faster transfers"
+                ],
+                correctIndex: 1,
+                explanation: "HTTP/2 multiplexing interleaves requests and responses into binary frames over a single persistent TCP connection, preventing the latency bottlenecks of serial HTTP/1.1 requests.",
+                category: "Networking & Architecture"
+            },
+            {
+                question: "In Node.js, how should CPU-intensive operations (e.g. heavy cryptography, image processing) be executed without blocking the main event loop?",
+                options: [
+                    "Using fs.readFileSync() inside an async function",
+                    "Offloading work to the worker_threads module or child processes",
+                    "Wrapping the code in a while(true) loop",
+                    "Increasing the computer's screen brightness"
+                ],
+                correctIndex: 1,
+                explanation: "worker_threads or background worker queues allow executing CPU-bound algorithmic computation on separate OS threads, preserving low-latency responsiveness for incoming I/O requests on the main loop.",
+                category: "Node.js Internals"
+            },
+            {
+                question: "What is the core difference between 'git merge' and 'git rebase'?",
+                options: [
+                    "Merge creates a non-destructive merge commit joining two branch histories; Rebase replays commits sequentially onto the target branch tip creating a linear commit history",
+                    "Rebase deletes the commit history permanently from GitHub; Merge keeps it",
+                    "Merge can only be executed by repository administrators",
+                    "Rebase only works with SVN repositories"
+                ],
+                correctIndex: 0,
+                explanation: "git merge creates a commit that joins histories preserving the exact timeline. git rebase rewrites the feature commits onto the latest base tip, yielding a pristine linear commit history.",
+                category: "DevOps & Version Control"
+            },
+            {
+                question: "Which HTTP status code must an API return when an endpoint requires authentication but valid credentials were not provided in the request headers?",
+                options: [
+                    "200 OK",
+                    "401 Unauthorized",
+                    "403 Forbidden",
+                    "404 Not Found"
+                ],
+                correctIndex: 1,
+                explanation: "401 Unauthorized specifies that authentication credentials are required and were either missing or invalid. (403 Forbidden is used when identity is known but access permissions are denied).",
+                category: "API Design"
+            }
+        ],
+        dsaQuestions: [
+            {
+                title: "Two Sum (Target Pair Indices)",
+                difficulty: "Easy",
+                timeLimitMinutes: 10,
+                problemStatement: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+                constraints: [
+                    "2 <= nums.length <= 10^4",
+                    "-10^9 <= nums[i] <= 10^9",
+                    "-10^9 <= target <= 10^9",
+                    "Only one valid answer exists."
+                ],
+                examples: [
+                    {
+                        input: "nums = [2,7,11,15], target = 9",
+                        output: "[0, 1]",
+                        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
+                    },
+                    {
+                        input: "nums = [3,2,4], target = 6",
+                        output: "[1, 2]",
+                        explanation: "Because nums[1] + nums[2] == 6, we return [1, 2]."
+                    }
+                ],
+                starterCode: {
+                    javascript: `// Two Sum: Return [index1, index2]
+function twoSum(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (map.has(complement)) {
+            return [map.get(complement), i];
+        }
+        map.set(nums[i], i);
+    }
+    return [];
+}
+
+// Test Run
+const nums = [2, 7, 11, 15];
+const target = 9;
+console.log(JSON.stringify(twoSum(nums, target)));`,
+                    python: `# Two Sum: Return [index1, index2]
+def twoSum(nums, target):
+    seen = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            return [seen[complement], i]
+        seen[num] = i
+    return []
+
+# Test Run
+nums = [2, 7, 11, 15]
+target = 9
+print(twoSum(nums, target))`,
+                    java: `import java.util.*;
+
+public class Main {
+    public static int[] twoSum(int[] nums, int target) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int complement = target - nums[i];
+            if (map.containsKey(complement)) {
+                return new int[] { map.get(complement), i };
+            }
+            map.put(nums[i], i);
+        }
+        return new int[0];
+    }
+
+    public static void main(String[] args) {
+        int[] nums = {2, 7, 11, 15};
+        int target = 9;
+        int[] result = twoSum(nums, target);
+        System.out.println(Arrays.toString(result));
+    }
+}`,
+                    cpp: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+
+std::vector<int> twoSum(const std::vector<int>& nums, int target) {
+    std::unordered_map<int, int> map;
+    for (int i = 0; i < nums.size(); ++i) {
+        int complement = target - nums[i];
+        if (map.find(complement) != map.end()) {
+            return {map[complement], i};
+        }
+        map[nums[i]] = i;
+    }
+    return {};
+}
+
+int main() {
+    std::vector<int> nums = {2, 7, 11, 15};
+    int target = 9;
+    std::vector<int> res = twoSum(nums, target);
+    std::cout << "[" << res[0] << ", " << res[1] << "]" << std::endl;
+    return 0;
+}`,
+                    c: `#include <stdio.h>
+#include <stdlib.h>
+
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    int* result = (int*)malloc(2 * sizeof(int));
+    *returnSize = 2;
+    for (int i = 0; i < numsSize; i++) {
+        for (int j = i + 1; j < numsSize; j++) {
+            if (nums[i] + nums[j] == target) {
+                result[0] = i;
+                result[1] = j;
+                return result;
+            }
+        }
+    }
+    *returnSize = 0;
+    return result;
+}
+
+int main() {
+    int nums[] = {2, 7, 11, 15};
+    int returnSize;
+    int* res = twoSum(nums, 4, 9, &returnSize);
+    printf("[%d, %d]\\n", res[0], res[1]);
+    free(res);
+    return 0;
+}`
+                },
+                testCases: [
+                    { input: "nums = [2,7,11,15], target = 9", expectedOutput: "[0, 1]" },
+                    { input: "nums = [3,2,4], target = 6", expectedOutput: "[1, 2]" }
+                ]
+            },
+            {
+                title: "Longest Substring Without Repeating Characters",
+                difficulty: "Medium",
+                timeLimitMinutes: 30,
+                problemStatement: "Given a string `s`, find the length of the longest substring without repeating characters.\n\nA substring is a contiguous non-empty sequence of characters within a string.",
+                constraints: [
+                    "0 <= s.length <= 5 * 10^4",
+                    "`s` consists of English letters, digits, symbols and spaces."
+                ],
+                examples: [
+                    {
+                        input: 's = "abcabcbb"',
+                        output: "3",
+                        explanation: 'The answer is "abc", with the length of 3.'
+                    },
+                    {
+                        input: 's = "bbbbb"',
+                        output: "1",
+                        explanation: 'The answer is "b", with the length of 1.'
+                    }
+                ],
+                starterCode: {
+                    javascript: `// Longest Substring Without Repeating Characters
+function lengthOfLongestSubstring(s) {
+    let maxLength = 0;
+    let left = 0;
+    const charMap = new Map();
+
+    for (let right = 0; right < s.length; right++) {
+        const char = s[right];
+        if (charMap.has(char) && charMap.get(char) >= left) {
+            left = charMap.get(char) + 1;
+        }
+        charMap.set(char, right);
+        maxLength = Math.max(maxLength, right - left + 1);
+    }
+
+    return maxLength;
+}
+
+// Test Run
+console.log(lengthOfLongestSubstring("abcabcbb"));`,
+                    python: `# Longest Substring Without Repeating Characters
+def lengthOfLongestSubstring(s: str) -> int:
+    char_map = {}
+    max_len = 0
+    left = 0
+
+    for right, char in enumerate(s):
+        if char in char_map and char_map[char] >= left:
+            left = char_map[char] + 1
+        char_map[char] = right
+        max_len = max(max_len, right - left + 1)
+
+    return max_len
+
+# Test Run
+print(lengthOfLongestSubstring("abcabcbb"))`,
+                    java: `import java.util.*;
+
+public class Main {
+    public static int lengthOfLongestSubstring(String s) {
+        int maxLen = 0, left = 0;
+        Map<Character, Integer> map = new HashMap<>();
+
+        for (int right = 0; right < s.length(); right++) {
+            char c = s.charAt(right);
+            if (map.containsKey(c) && map.get(c) >= left) {
+                left = map.get(c) + 1;
+            }
+            map.put(c, right);
+            maxLen = Math.max(maxLen, right - left + 1);
+        }
+
+        return maxLen;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(lengthOfLongestSubstring("abcabcbb"));
+    }
+}`,
+                    cpp: `#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <algorithm>
+
+int lengthOfLongestSubstring(const std::string& s) {
+    std::unordered_map<char, int> map;
+    int maxLen = 0, left = 0;
+
+    for (int right = 0; right < s.length(); ++right) {
+        char c = s[right];
+        if (map.find(c) != map.end() && map[c] >= left) {
+            left = map[c] + 1;
+        }
+        map[c] = right;
+        maxLen = std::max(maxLen, right - left + 1);
+    }
+
+    return maxLen;
+}
+
+int main() {
+    std::cout << lengthOfLongestSubstring("abcabcbb") << std::endl;
+    return 0;
+}`,
+                    c: `#include <stdio.h>
+#include <string.h>
+
+int lengthOfLongestSubstring(char* s) {
+    int maxLen = 0, left = 0;
+    int lastPos[256];
+    memset(lastPos, -1, sizeof(lastPos));
+
+    for (int right = 0; s[right] != '\\0'; right++) {
+        unsigned char c = (unsigned char)s[right];
+        if (lastPos[c] >= left) {
+            left = lastPos[c] + 1;
+        }
+        lastPos[c] = right;
+        int currentLen = right - left + 1;
+        if (currentLen > maxLen) maxLen = currentLen;
+    }
+
+    return maxLen;
+}
+
+int main() {
+    printf("%d\\n", lengthOfLongestSubstring("abcabcbb"));
+    return 0;
+}`
+                },
+                testCases: [
+                    { input: 's = "abcabcbb"', expectedOutput: "3" },
+                    { input: 's = "bbbbb"', expectedOutput: "1" }
+                ]
+            }
+        ]
+    };
+
     return {
         title,
         matchScore,
         technicalQuestions,
         behavioralQuestions,
         skillGaps,
-        preparationPlan
+        preparationPlan,
+        assessment
     };
 }
 
@@ -599,7 +1072,14 @@ ${selfDescription || (selfImage ? "[Attached as screenshot image - please thorou
    - 3 to 5 realistic gaps with severity (low, medium, high).
 
 4. Preparation Plan (preparationPlan):
-   - A structured 5 to 7 day preparation roadmap with daily focus area and concrete actionable tasks.`;
+   - A structured 5 to 7 day preparation roadmap with daily focus area and concrete actionable tasks.
+
+5. Online Assessment & Screening Test Round (assessment):
+   - mcqs: You MUST generate EXACTLY 10 tailored multiple choice questions testing core technical competencies (language internals, frameworks, APIs, databases, algorithms). Each question has 4 realistic options, 0-indexed correctIndex (0 to 3), and an authoritative technical explanation.
+   - dsaQuestions: You MUST generate EXACTLY 2 practical DSA coding problems:
+     - Question 1: Difficulty "Easy", timeLimitMinutes: 10
+     - Question 2: Difficulty "Medium", timeLimitMinutes: 30
+     - Both questions must include constraints, examples, test cases with input and expectedOutput, and clean starter boilerplate code in all 5 languages: javascript, python, java, cpp, and c.`;
 
     const contents = [{ text: promptText }];
 

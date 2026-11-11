@@ -107,3 +107,21 @@ export const generateResumePdf = async ({ interviewReportId }) => {
         throw error;
     }
 };
+
+/**
+ * @description Service to execute code across C, C++, Java, Python, and JavaScript against test cases or custom input.
+ */
+export const runCode = async ({ language, code, input, testCases }) => {
+    try {
+        const response = await api.post("/api/interview/code/run", {
+            language,
+            code,
+            input,
+            testCases
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error executing code:", error);
+        throw error;
+    }
+};

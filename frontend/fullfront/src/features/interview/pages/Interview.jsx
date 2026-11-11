@@ -3,8 +3,19 @@ import "../style/interview.scss";
 import { useInterview } from "../hooks/useInterview.js";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
+import AssessmentRound from "../components/AssessmentRound";
 
 const NAV_ITEMS = [
+  {
+    id: "assessment",
+    label: "Online Assessment (OA)",
+    badge: "10 MCQ + 2 DSA",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    ),
+  },
   {
     id: "technical",
     label: "Technical Q&A",
@@ -450,8 +461,15 @@ const Interview = () => {
             </div>
           </nav>
 
-          {/* ── Center Content: Q&A, Roadmap, or ATS Resume Studio ── */}
+          {/* ── Center Content: Q&A, Roadmap, Assessment, or ATS Resume Studio ── */}
           <main className="interview-content">
+            {/* 0. Online Assessment (OA) Round */}
+            {activeNav === "assessment" && (
+              <section className="section-pane section-pane--assessment">
+                <AssessmentRound assessmentData={report?.assessment} />
+              </section>
+            )}
+
             {/* 1. Technical Q&A */}
             {activeNav === "technical" && (
               <section className="section-pane">

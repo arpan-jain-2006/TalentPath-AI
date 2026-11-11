@@ -62,7 +62,50 @@ const preparationPlanSchema = new mongoose.Schema({
         type: String,
         required: [ true, "Task is required" ]
     } ]
+}, {
+    _id: false
 })
+
+const mcqSchema = new mongoose.Schema({
+    question: { type: String, required: true },
+    options: [{ type: String, required: true }],
+    correctIndex: { type: Number, required: true },
+    explanation: { type: String, required: true },
+    category: { type: String, default: "Technical" }
+}, { _id: false });
+
+const dsaExampleSchema = new mongoose.Schema({
+    input: { type: String, required: true },
+    output: { type: String, required: true },
+    explanation: { type: String, default: "" }
+}, { _id: false });
+
+const dsaTestCaseSchema = new mongoose.Schema({
+    input: { type: String, required: true },
+    expectedOutput: { type: String, required: true }
+}, { _id: false });
+
+const dsaQuestionSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    difficulty: { type: String, enum: ["Easy", "Medium", "Hard"], default: "Easy" },
+    timeLimitMinutes: { type: Number, default: 15 },
+    problemStatement: { type: String, required: true },
+    constraints: [{ type: String }],
+    examples: [dsaExampleSchema],
+    starterCode: {
+        javascript: { type: String, default: "" },
+        python: { type: String, default: "" },
+        java: { type: String, default: "" },
+        cpp: { type: String, default: "" },
+        c: { type: String, default: "" }
+    },
+    testCases: [dsaTestCaseSchema]
+}, { _id: false });
+
+const assessmentSchema = new mongoose.Schema({
+    mcqs: [mcqSchema],
+    dsaQuestions: [dsaQuestionSchema]
+}, { _id: false });
 
 const interviewReportSchema = new mongoose.Schema({
     jobDescription: {
@@ -94,6 +137,7 @@ const interviewReportSchema = new mongoose.Schema({
     behavioralQuestions: [ behavioralQuestionSchema ],
     skillGaps: [ skillGapSchema ],
     preparationPlan: [ preparationPlanSchema ],
+    assessment: assessmentSchema,
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",

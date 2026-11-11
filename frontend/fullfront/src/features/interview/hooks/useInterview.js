@@ -4,7 +4,8 @@ import {
     getInterviewReportById, 
     generateResumePdf,
     deleteInterviewReport,
-    getResumePreview 
+    getResumePreview,
+    runCode
 } from "../services/interview.api"
 import { useContext } from "react"
 import { InterviewContext } from "../interview.context"
@@ -168,6 +169,15 @@ export const useInterview = () => {
         window.open(viewUrl, "_blank")
     }
 
+    const executeCodeSnippet = async ({ language, code, input, testCases }) => {
+        try {
+            return await runCode({ language, code, input, testCases });
+        } catch (error) {
+            console.error("Code runner execution error:", error);
+            throw error;
+        }
+    }
+
     return { 
         loading, 
         report, 
@@ -180,6 +190,7 @@ export const useInterview = () => {
         deleteReport,
         fetchResumePreview,
         getResumePdf,
-        openResumePdfInNewTab
+        openResumePdfInNewTab,
+        executeCodeSnippet
     }
 }
